@@ -1,13 +1,12 @@
-package com.madlabs.productinfo.server;
+package com.madlabs.productinfo.ch2.server;
 
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import ecommerce.ProductInfoGrpc;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-public class ProductInfoServer extends ProductInfoGrpc.ProductInfoImplBase {
+public class ProductInfoServer {
 
 	private static final Logger logger = Logger.getLogger(ProductInfoServer.class.getName());
 
@@ -27,26 +26,20 @@ public class ProductInfoServer extends ProductInfoGrpc.ProductInfoImplBase {
 		}));
 	}
 
-	private void stop() {
-		if (server != null) {
-			server.shutdown();
-		}
-	}
-
-	/**
-	 * Await termination on the main thread since the grpc library uses daemon
-	 * threads.
-	 */
 	private void blockUntilShutdown() throws InterruptedException {
 		if (server != null) {
 			server.awaitTermination();
 		}
 	}
 
-	/**
-	 * Main launches the server from the command line.
-	 */
+	private void stop() {
+		if (server != null) {
+			server.shutdown();
+		}
+	}
+
 	public static void main(String[] args) throws IOException, InterruptedException {
+
 		final ProductInfoServer server = new ProductInfoServer();
 		server.start();
 		server.blockUntilShutdown();
