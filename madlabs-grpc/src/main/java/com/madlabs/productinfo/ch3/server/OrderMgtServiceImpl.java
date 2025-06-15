@@ -1,5 +1,6 @@
 package com.madlabs.productinfo.ch3.server;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 import com.google.protobuf.StringValue;
@@ -38,6 +39,32 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 			logger.info("Order : " + request.getValue() + " - Not found.");
 			responseObserver.onCompleted();
 		}
+
+	}
+
+	// Server-Streaming RPC
+	@Override
+	public void searchOrders(StringValue request, StreamObserver<Order> responseObserver) {
+
+		for (Map.Entry<String, OrderManagementOuterClass.Order> orderEntry : data.orderMap.entrySet()) {
+
+			OrderManagementOuterClass.Order order = orderEntry.getValue();
+
+			for (String item : order.getItemsList()) {
+				if (item.contains(request.getValue())) {
+					logger.info("Item found " + item);
+					responseObserver.onNext(order);
+					break;
+				}
+			}
+			try {
+				Thread.sleep(500l);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		responseObserver.onCompleted();
 
 	}
 

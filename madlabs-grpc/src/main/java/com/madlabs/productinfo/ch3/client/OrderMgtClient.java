@@ -1,5 +1,6 @@
 package com.madlabs.productinfo.ch3.client;
 
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 import com.google.protobuf.StringValue;
@@ -31,9 +32,18 @@ public class OrderMgtClient {
 		StringValue id = StringValue.newBuilder().setValue("101").build();
 		OrderManagementOuterClass.Order orderResponse = stub.getOrder(id);
 		logger.info("GetOrder Response -> : " + orderResponse.toString());
-		
-		
-		
+
+		// Search Orders
+		StringValue searchStr = StringValue.newBuilder().setValue("Google").build();
+
+		Iterator<OrderManagementOuterClass.Order> matchingOrdersItr = stub.searchOrders(searchStr);
+
+		while (matchingOrdersItr.hasNext()) {
+			OrderManagementOuterClass.Order matchingOrder = matchingOrdersItr.next();
+			logger.info("Search Order Response -> Matching Order - " + matchingOrder.getId());
+			logger.info(" Order : " + order.getId() + "\n " + matchingOrder.toString());
+		}
+
 	}
 
 }
