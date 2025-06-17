@@ -1,20 +1,23 @@
 package com.madlabs.productinfo.ch3.server;
 
+import java.io.IOException;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import java.io.IOException;
-import java.util.logging.Logger;
-
 public class OrderMgtServer {
-	private static final Logger logger = Logger.getLogger(OrderMgtServer.class.getName());
+	private static final Logger logger = LogManager.getLogger(OrderMgtServer.class.getName());
 
 	private Server server;
 
 	private void start() throws IOException {
 		/* The port on which the server should run */
 		int port = 50051;
-		server = ServerBuilder.forPort(port).addService(new OrderMgtServiceImpl()).build().start();
+		server = ServerBuilder.forPort(port).intercept(new GlobalInterceptor()).addService(new OrderMgtServiceImpl())
+				.build().start();
 		logger.info("Server started, listening on " + port);
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			// Use stderr here since the logger may have been reset by its JVM shutdown

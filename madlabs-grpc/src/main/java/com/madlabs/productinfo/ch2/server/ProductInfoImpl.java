@@ -3,7 +3,9 @@ package com.madlabs.productinfo.ch2.server;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import ecommerce.ProductInfoGrpc;
 import ecommerce.ProductInfoOuterClass;
@@ -17,7 +19,7 @@ public class ProductInfoImpl extends ProductInfoGrpc.ProductInfoImplBase {
 
 	private Map<String, ProductInfoOuterClass.Product> dataMap = new HashMap<>();
 
-	private static final Logger logger = Logger.getLogger(ProductInfoImpl.class.getName());
+	private static final Logger logger = LogManager.getLogger(ProductInfoImpl.class.getName());
 
 	@Override
 	public void addProduct(Product request, StreamObserver<ProductID> responseObserver) {

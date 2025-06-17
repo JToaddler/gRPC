@@ -1,7 +1,9 @@
 package com.madlabs.productinfo.ch3.server;
 
 import java.util.Map;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.protobuf.StringValue;
 
@@ -12,7 +14,7 @@ import io.grpc.stub.StreamObserver;
 
 public class OrderMgtServiceImpl extends OrderManagementImplBase {
 
-	private static final Logger logger = Logger.getLogger(OrderMgtServiceImpl.class.getName());
+	private static final Logger logger = LogManager.getLogger(OrderMgtServiceImpl.class.getName());
 
 	private OrderData data = new OrderData();
 
@@ -45,27 +47,35 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 	// Server-Streaming RPC
 	@Override
 	public void searchOrders(StringValue request, StreamObserver<Order> responseObserver) {
-
+		
+		logger.info("searchOrders received ");
+		
 		for (Map.Entry<String, OrderManagementOuterClass.Order> orderEntry : data.orderMap.entrySet()) {
 
 			OrderManagementOuterClass.Order order = orderEntry.getValue();
 
 			for (String item : order.getItemsList()) {
 				if (item.contains(request.getValue())) {
-					logger.info("Item found " + item);
+					logger.info("searchOrders sending data ");
 					responseObserver.onNext(order);
 					break;
 				}
 			}
 			try {
-				Thread.sleep(500l);
+				Thread.sleep(2000l);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
+		logger.info("searchOrders onCompleted ");
 		responseObserver.onCompleted();
+	}
 
+	// Client-Streaming RPC
+	@Override
+	public StreamObserver<Order> updateOrders(StreamObserver<StringValue> responseObserver) {
+		return new UpdateOrdersStream(responseObserver, this.data);
 	}
 
 }
