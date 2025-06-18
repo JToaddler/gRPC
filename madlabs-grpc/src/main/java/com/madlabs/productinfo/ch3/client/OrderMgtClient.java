@@ -16,6 +16,8 @@ import ecommerce.OrderManagementOuterClass;
 import ecommerce.OrderManagementOuterClass.Order;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 public class OrderMgtClient {
@@ -27,15 +29,25 @@ public class OrderMgtClient {
 		ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051).usePlaintext()
 				.intercept(new OrderMgtClientInterceptor()).build();
 
-		OrderManagementBlockingStub stub = OrderManagementGrpc.newBlockingStub(channel);
+		OrderManagementBlockingStub stub = OrderManagementGrpc.newBlockingStub(channel).withDeadlineAfter(6000l,
+				TimeUnit.MILLISECONDS);
 		OrderManagementGrpc.OrderManagementStub asyncStub = OrderManagementGrpc.newStub(channel);
 
 		OrderManagementOuterClass.Order order = OrderManagementOuterClass.Order.newBuilder().setId("101")
 				.addItems("iPhone XS").addItems("Mac Book Pro").setDestination("San Jose, CA").setPrice(2300).build();
 
-		// Unary func Add Order
-		StringValue result = stub.addOrder(order);
-		logger.info("AddOrder Response -> : " + result.getValue());
+		try {
+			// Unary func Add Order
+
+			StringValue result = stub.addOrder(order);
+			logger.info("AddOrder Response -> : " + result.getValue());
+		} catch (StatusRuntimeException e) {
+			if (e.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+				logger.info("Deadline Exceeded. : " + e.getMessage());
+			} else {
+				logger.info("Unspecified error from the service -> " + e.getMessage());
+			}
+		}
 
 		// Unary func Get Order
 		StringValue id = StringValue.newBuilder().setValue("101").build();

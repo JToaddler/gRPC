@@ -17,7 +17,7 @@ public class GlobalInterceptor implements ServerInterceptor {
 	public <ReqT, RespT> Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
 			ServerCallHandler<ReqT, RespT> next) {
 
-		logger.info("Remote Method Invoked - " + call.getMethodDescriptor().getFullMethodName());
+		logger.info("Remote Method Invoked - " + call.getMethodDescriptor().getFullMethodName() + ", Headers : " + headers);
 
 		ServerCall<ReqT, RespT> serverCall = new OrderMgtServerCall<>(call);
 		// Context ctx = Context.current();

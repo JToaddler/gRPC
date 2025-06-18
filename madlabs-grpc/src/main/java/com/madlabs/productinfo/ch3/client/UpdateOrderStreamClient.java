@@ -24,7 +24,7 @@ public class UpdateOrderStreamClient implements StreamObserver<StringValue> {
 		logger.info("Update Orders Response : " + value.getValue());
 
 		try {
-			Thread.sleep(400l);
+			Thread.sleep(50l);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

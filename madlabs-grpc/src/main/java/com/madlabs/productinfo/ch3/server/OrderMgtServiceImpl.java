@@ -23,6 +23,12 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 	public void addOrder(Order request, StreamObserver<StringValue> responseObserver) {
 
 		logger.info("Order Added - ID: " + request.getId() + ", Destination : " + request.getDestination());
+		try {
+			Thread.sleep(1002l);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		data.orderMap.put(request.getId(), request);
 		StringValue id = StringValue.newBuilder().setValue("100500").build();
 		responseObserver.onNext(id);
@@ -47,9 +53,9 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 	// Server-Streaming RPC
 	@Override
 	public void searchOrders(StringValue request, StreamObserver<Order> responseObserver) {
-		
+
 		logger.info("searchOrders received ");
-		
+
 		for (Map.Entry<String, OrderManagementOuterClass.Order> orderEntry : data.orderMap.entrySet()) {
 
 			OrderManagementOuterClass.Order order = orderEntry.getValue();
@@ -62,7 +68,7 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 				}
 			}
 			try {
-				Thread.sleep(2000l);
+				Thread.sleep(50l);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
