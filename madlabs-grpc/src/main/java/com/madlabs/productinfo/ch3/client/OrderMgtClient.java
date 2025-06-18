@@ -24,7 +24,8 @@ public class OrderMgtClient {
 
 	public static void main(String[] args) {
 
-		ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051).usePlaintext().build();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051).usePlaintext()
+				.intercept(new OrderMgtClientInterceptor()).build();
 
 		OrderManagementBlockingStub stub = OrderManagementGrpc.newBlockingStub(channel);
 		OrderManagementGrpc.OrderManagementStub asyncStub = OrderManagementGrpc.newStub(channel);
