@@ -11,6 +11,7 @@ import ecommerce.ProductInfoGrpc;
 import ecommerce.ProductInfoOuterClass;
 import ecommerce.ProductInfoOuterClass.Product;
 import ecommerce.ProductInfoOuterClass.ProductID;
+import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
@@ -23,7 +24,9 @@ public class ProductInfoImpl extends ProductInfoGrpc.ProductInfoImplBase {
 
 	@Override
 	public void addProduct(Product request, StreamObserver<ProductID> responseObserver) {
-
+		
+		Context ctx = Context.current();
+		
 		String id = UUID.randomUUID().toString();
 		dataMap.put(id, request);
 		logger.info(" addProduct :  " + id);

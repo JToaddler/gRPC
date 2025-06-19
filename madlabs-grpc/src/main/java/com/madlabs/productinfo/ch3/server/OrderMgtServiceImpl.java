@@ -9,7 +9,12 @@ import com.google.protobuf.StringValue;
 
 import ecommerce.OrderManagementGrpc.OrderManagementImplBase;
 import ecommerce.OrderManagementOuterClass;
+import ecommerce.ProductInfoGrpc;
+import ecommerce.ProductInfoOuterClass;
 import ecommerce.OrderManagementOuterClass.Order;
+import io.grpc.Context;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 public class OrderMgtServiceImpl extends OrderManagementImplBase {
@@ -17,7 +22,9 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 	private static final Logger logger = LogManager.getLogger(OrderMgtServiceImpl.class.getName());
 
 	private OrderData data = new OrderData();
+	
 
+	
 	// Unary
 	@Override
 	public void addOrder(Order request, StreamObserver<StringValue> responseObserver) {
@@ -31,6 +38,8 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 		}
 		data.orderMap.put(request.getId(), request);
 		StringValue id = StringValue.newBuilder().setValue("100500").build();
+		
+		Context ctx = Context.current();
 		responseObserver.onNext(id);
 		responseObserver.onCompleted();
 	}
@@ -68,7 +77,7 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 				}
 			}
 			try {
-				Thread.sleep(50l);
+				Thread.sleep(4000l);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

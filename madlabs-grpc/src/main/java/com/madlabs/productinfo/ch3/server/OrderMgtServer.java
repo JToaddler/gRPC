@@ -14,10 +14,11 @@ public class OrderMgtServer {
 	private Server server;
 
 	private void start() throws IOException {
+		
 		/* The port on which the server should run */
 		int port = 50051;
-		server = ServerBuilder.forPort(port).intercept(new GlobalInterceptor()).addService(new OrderMgtServiceImpl())
-				.build().start();
+		server = ServerBuilder.forPort(port).intercept(new ContextInterceptor()).intercept(new GlobalInterceptor())
+				.addService(new OrderMgtServiceImpl()).build().start();
 		logger.info("Server started, listening on " + port);
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			// Use stderr here since the logger may have been reset by its JVM shutdown

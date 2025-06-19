@@ -5,10 +5,17 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.madlabs.grpc</groupId>
 	<artifactId>madlabs-grpc</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>madlabs-grpc</name>
-
-
+	<packaging>jar</packaging>
+	
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>17</java.version>
+		<maven.compiler.source>17</maven.compiler.source>
+    	<maven.compiler.target>17</maven.compiler.target>
+	</properties>
+	
 	<dependencies>
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
@@ -38,7 +45,7 @@
 	</dependencies>
 
 	<build>
-		<sourceDirectory>${project.basedir}/src/main/proto</sourceDirectory>
+		<sourceDirectory>${project.basedir}/src/main</sourceDirectory>
 		<extensions>
 			<extension>
 				<groupId>kr.motd.maven</groupId>
@@ -47,6 +54,7 @@
 			</extension>
 		</extensions>
 		<plugins>
+		
 			<plugin>
 				<groupId>org.xolstice.maven.plugins</groupId>
 				<artifactId>protobuf-maven-plugin</artifactId>
@@ -64,6 +72,53 @@
 							<goal>compile</goal>
 							<goal>test-compile</goal>
 							<goal>compile-custom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.0.2</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+							<mainClass>com.madlabs.productinfo.ch3.server.OrderMgtServer</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<overWriteReleases>false</overWriteReleases>
+							<includeScope>runtime</includeScope>
+							<outputDirectory>${project.build.directory}/lib</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>dockerfile-maven-plugin</artifactId>
+				<version>1.4.13</version>
+				<configuration>
+					<repository>${project.artifactId}</repository>
+					<tag>latest</tag>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>build</goal>
 						</goals>
 					</execution>
 				</executions>
