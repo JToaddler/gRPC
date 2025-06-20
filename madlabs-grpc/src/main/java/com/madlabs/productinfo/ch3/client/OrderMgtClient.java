@@ -110,7 +110,7 @@ public class OrderMgtClient {
 		updateOrderStream.onNext(updOrder3);
 
 		try {
-			Thread.sleep(7000l);
+			Thread.sleep(1000l);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -77,7 +77,7 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 				}
 			}
 			try {
-				Thread.sleep(4000l);
+				Thread.sleep(500l);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

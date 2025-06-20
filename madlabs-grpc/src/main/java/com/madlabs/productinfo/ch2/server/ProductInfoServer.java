@@ -1,6 +1,7 @@
 package com.madlabs.productinfo.ch2.server;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -14,6 +15,7 @@ public class ProductInfoServer {
 
 	private static final Logger logger = Logger.getLogger(ProductInfoServer.class.getName());
 
+	ExecutorService executorService;
 	private Server server;
 
 	private void start() throws IOException {
@@ -22,17 +24,13 @@ public class ProductInfoServer {
 //		server = ServerBuilder.forPort(port).addService(new ProductInfoImpl())
 //				.executor(Executors.newFixedThreadPool(20)).build().start();
 
-		server = NettyServerBuilder.forPort(port).addService(new ProductInfoImpl())
-				.executor(Executors.newFixedThreadPool(20))
-				.bossEventLoopGroup(new NioEventLoopGroup(1))
-				.workerEventLoopGroup(new NioEventLoopGroup(125))
-				.executor(Executors.newFixedThreadPool(20))
-				.channelType(NioServerSocketChannel.class)
-				.maxInboundMessageSize(Integer.MAX_VALUE)
-				.maxConnectionIdle(5,TimeUnit.MINUTES)
-				.permitKeepAliveWithoutCalls(true)
-				.permitKeepAliveTime(180, TimeUnit.SECONDS)
-				.build().start();
+		executorService = Executors.newFixedThreadPool(20);
+
+		server = NettyServerBuilder.forPort(port).addService(new ProductInfoImpl()).executor(executorService)
+				.bossEventLoopGroup(new NioEventLoopGroup(1)).workerEventLoopGroup(new NioEventLoopGroup(125))
+				.channelType(NioServerSocketChannel.class).maxInboundMessageSize(Integer.MAX_VALUE)
+				.maxConnectionIdle(5, TimeUnit.MINUTES).permitKeepAliveWithoutCalls(true)
+				.permitKeepAliveTime(180, TimeUnit.SECONDS).build().start();
 
 		logger.info("Server started, listening on " + port);
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -52,7 +50,18 @@ public class ProductInfoServer {
 
 	private void stop() {
 		if (server != null) {
+
+			executorService.shutdown();
+			try {
+				if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+					executorService.shutdownNow();
+				}
+			} catch (InterruptedException e) {
+				executorService.shutdownNow();
+			}
+
 			server.shutdown();
+
 		}
 	}
 
