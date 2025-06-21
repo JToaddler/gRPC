@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package banking;
+
+
+// Message representing a client's account balance request
+message AccountRequest {
+  string account_number = 1;
+}
+
+// Message representing a server's response to a client's account balance request
+message AccountBalanceResponse {
+  string account_number = 1;
+  double balance = 2;
+}
+
+message CustomError {
+  string errorType = 1;
+  string message = 2;
+}
+
+// Service for retrieving account balance
+service AccountBalanceService {
+  rpc GetAccountBalance (AccountRequest) returns (AccountBalanceResponse) {}
+}
