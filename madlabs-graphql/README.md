@@ -1,1 +1,0 @@
-For interactive GraphQL GUI : http://localhost:8080/graphiql
