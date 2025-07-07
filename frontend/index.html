@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gRPC Web Streaming Client - Order Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            flex: 1;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .stop-button {
+            background-color: #dc3545;
+        }
+        .stop-button:hover {
+            background-color: #c82333;
+        }
+        .clear-button {
+            background-color: #6c757d;
+        }
+        .clear-button:hover {
+            background-color: #5a6268;
+        }
+        .stream-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .stream-status {
+            font-weight: bold;
+        }
+        .stream-counter {
+            color: #007bff;
+            font-weight: bold;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .order-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .order-item.new {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .order-id {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .order-price {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .status.streaming {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .loading-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .no-results {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #6c757d;
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>gRPC Web Streaming Client - Order Management</h1>
+        
+        <div class="form-group">
+            <label for="envoyUrl">Envoy Proxy URL:</label>
+            <input type="text" id="envoyUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
+        </div>
+        
+        <div class="form-group">
+            <label for="searchQuery">Search Query:</label>
+            <input type="text" id="searchQuery" placeholder="Enter search term for orders">
+        </div>
+        
+        <div class="button-group">
+            <button id="searchButton" onclick="startStreaming()">Start Streaming</button>
+            <button id="stopButton" class="stop-button" onclick="stopStreaming()" disabled>Stop Stream</button>
+            <button class="clear-button" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div class="stream-info">
+            <div class="stream-status" id="streamStatus">Ready to stream</div>
+            <div class="stream-counter" id="streamCounter">Orders received: 0</div>
+        </div>
+        
+        <div id="status"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        class GrpcWebStreamingClient {
+            constructor(baseUrl) {
+                this.baseUrl = baseUrl;
+                this.isStreaming = false;
+                this.abortController = null;
+                this.orderCount = 0;
+                this.onOrderReceived = null;
+                this.onStatusUpdate = null;
+                this.onError = null;
+                this.onStreamEnd = null;
+            }
+
+            async searchOrdersStream(query) {
+                if (this.isStreaming) {
+                    throw new Error('Stream already in progress');
+                }
+
+                const serviceUrl = `${this.baseUrl}/ecommerce.OrderManagement/searchOrders`;
+                const request = this.createStringValueMessage(query);
+                
+                this.isStreaming = true;
+                this.abortController = new AbortController();
+                this.orderCount = 0;
+                
+                try {
+                    const response = await fetch(serviceUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/grpc-web+proto',
+                            'Accept': 'application/grpc-web+proto',
+                            'X-Grpc-Web': '1'
+                        },
+                        body: request,
+                        signal: this.abortController.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    await this.processStreamingResponse(response);
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        this.onStatusUpdate?.('Stream stopped by user', 'info');
+                    } else {
+                        console.error('gRPC Web streaming failed:', error);
+                        this.onError?.(error);
+                    }
+                } finally {
+                    this.isStreaming = false;
+                    this.abortController = null;
+                    this.onStreamEnd?.();
+                }
+            }
+
+            async processStreamingResponse(response) {
+                const reader = response.body.getReader();
+                let buffer = new Uint8Array(0);
+
+                this.onStatusUpdate?.('Streaming started...', 'streaming');
+
+                try {
+                    while (this.isStreaming) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) {
+                            this.onStatusUpdate?.(`Stream completed. Total orders: ${this.orderCount}`, 'success');
+                            break;
+                        }
+
+                        // Append new data to buffer
+                        const newBuffer = new Uint8Array(buffer.length + value.length);
+                        newBuffer.set(buffer);
+                        newBuffer.set(value, buffer.length);
+                        buffer = newBuffer;
+
+                        // Process complete messages as they arrive
+                        while (buffer.length >= 5) {
+                            const messageLength = new DataView(buffer.buffer, buffer.byteOffset).getUint32(1, false);
+                            
+                            if (buffer.length >= 5 + messageLength) {
+                                const messageData = buffer.subarray(5, 5 + messageLength);
+                                const order = this.parseOrderMessage(messageData);
+                                
+                                if (order) {
+                                    this.orderCount++;
+                                    this.onOrderReceived?.(order, this.orderCount);
+                                }
+                                
+                                // Remove processed message from buffer
+                                buffer = buffer.subarray(5 + messageLength);
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+            }
+
+            stopStream() {
+                if (this.isStreaming && this.abortController) {
+                    this.abortController.abort();
+                    this.isStreaming = false;
+                }
+            }
+
+            createStringValueMessage(value) {
+                const encoder = new TextEncoder();
+                const valueBytes = encoder.encode(value);
+                
+                const message = new ArrayBuffer(valueBytes.length + 10);
+                const view = new DataView(message);
+                const uint8View = new Uint8Array(message);
+                
+                let offset = 0;
+                uint8View[offset++] = 0x0A; // Field 1 tag
+                uint8View[offset++] = valueBytes.length; // Length
+                uint8View.set(valueBytes, offset);
+                offset += valueBytes.length;
+                
+                // Create gRPC frame
+                const frame = new ArrayBuffer(offset + 5);
+                const frameView = new DataView(frame);
+                const frameUint8 = new Uint8Array(frame);
+                
+                frameView.setUint8(0, 0x00); // Compression flag
+                frameView.setUint32(1, offset, false); // Message length
+                frameUint8.set(uint8View.subarray(0, offset), 5);
+                
+                return frame;
+            }
+
+            parseOrderMessage(data) {
+                try {
+                    const decoder = new TextDecoder();
+                    const order = {
+                        id: '',
+                        items: [],
+                        description: '',
+                        price: 0,
+                        destination: ''
+                    };
+
+                    let offset = 0;
+                    while (offset < data.length) {
+                        const tag = data[offset++];
+                        const fieldNumber = tag >> 3;
+                        const wireType = tag & 0x07;
+
+                        switch (fieldNumber) {
+                            case 1: // id
+                                if (wireType === 2) {
+                                    const length = data[offset++];
+                                    order.id = decoder.decode(data.subarray(offset, offset + length));
+                                    offset += length;
+                                }
+                                break;
+                            case 2: // items
+                                if (wireType === 2) {
+                                    const length = data[offset++];
+                                    const item = decoder.decode(data.subarray(offset, offset + length));
+                                    order.items.push(item);
+                                    offset += length;
+                                }
+                                break;
+                            case 3: // description
+                                if (wireType === 2) {
+                                    const length = data[offset++];
+                                    order.description = decoder.decode(data.subarray(offset, offset + length));
+                                    offset += length;
+                                }
+                                break;
+                            case 4: // price
+                                if (wireType === 5) {
+                                    const floatBytes = data.subarray(offset, offset + 4);
+                                    const floatView = new DataView(floatBytes.buffer, floatBytes.byteOffset);
+                                    order.price = floatView.getFloat32(0, true);
+                                    offset += 4;
+                                }
+                                break;
+                            case 5: // destination
+                                if (wireType === 2) {
+                                    const length = data[offset++];
+                                    order.destination = decoder.decode(data.subarray(offset, offset + length));
+                                    offset += length;
+                                }
+                                break;
+                            default:
+                                // Skip unknown fields
+                                if (wireType === 2) {
+                                    const length = data[offset++];
+                                    offset += length;
+                                } else if (wireType === 0) {
+                                    while (offset < data.length && (data[offset] & 0x80)) offset++;
+                                    offset++;
+                                }
+                                break;
+                        }
+                    }
+
+                    return order;
+                } catch (error) {
+                    console.error('Error parsing order message:', error);
+                    return null;
+                }
+            }
+        }
+
+        let grpcClient;
+        let resultsContainer;
+
+        function initializeClient() {
+            const envoyUrl = document.getElementById('envoyUrl').value;
+            grpcClient = new GrpcWebStreamingClient(envoyUrl);
+            resultsContainer = document.getElementById('results');
+            
+            // Set up event handlers
+            grpcClient.onOrderReceived = displayOrderInRealTime;
+            grpcClient.onStatusUpdate = updateStatus;
+            grpcClient.onError = handleError;
+            grpcClient.onStreamEnd = onStreamEnd;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const streamStatus = document.getElementById('streamStatus');
+            
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            streamStatus.textContent = message;
+            
+            if (type === 'streaming') {
+                streamStatus.innerHTML = `${message} <span class="loading-indicator"></span>`;
+            }
+        }
+
+        function handleError(error) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="error">Stream failed: ${error.message}</div>`;
+            document.getElementById('streamStatus').textContent = 'Stream failed';
+        }
+
+        function displayOrderInRealTime(order, orderNumber) {
+            // Update counter
+            document.getElementById('streamCounter').textContent = `Orders received: ${orderNumber}`;
+            
+            // Create order element
+            const orderElement = document.createElement('div');
+            orderElement.className = 'order-item new';
+            orderElement.innerHTML = `
+                <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+                <div class="order-id">Order #${orderNumber}: ${order.id}</div>
+                <div><strong>Items:</strong> ${order.items.join(', ')}</div>
+                <div><strong>Description:</strong> ${order.description}</div>
+                <div class="order-price">Price: $${order.price.toFixed(2)}</div>
+                <div><strong>Destination:</strong> ${order.destination}</div>
+            `;
+            
+            // Initialize results container if needed
+            if (!resultsContainer.querySelector('.results')) {
+                resultsContainer.innerHTML = '<div class="results"><h3>Live Stream Results:</h3></div>';
+            }
+            
+            const resultsDiv = resultsContainer.querySelector('.results');
+            resultsDiv.appendChild(orderElement);
+            
+            // Remove "new" class after animation
+            setTimeout(() => {
+                orderElement.classList.remove('new');
+            }, 300);
+            
+            // Auto-scroll to bottom
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function onStreamEnd() {
+            document.getElementById('searchButton').disabled = false;
+            document.getElementById('stopButton').disabled = true;
+            document.getElementById('streamStatus').textContent = 'Stream completed';
+        }
+
+        async function startStreaming() {
+            const query = document.getElementById('searchQuery').value;
+            
+            if (!query.trim()) {
+                updateStatus('Please enter a search query', 'error');
+                return;
+            }
+
+            initializeClient();
+            
+            // Update UI
+            document.getElementById('searchButton').disabled = true;
+            document.getElementById('stopButton').disabled = false;
+            document.getElementById('streamCounter').textContent = 'Orders received: 0';
+            
+            try {
+                await grpcClient.searchOrdersStream(query);
+            } catch (error) {
+                handleError(error);
+                onStreamEnd();
+            }
+        }
+
+        function stopStreaming() {
+            if (grpcClient && grpcClient.isStreaming) {
+                grpcClient.stopStream();
+            }
+        }
+
+        function clearResults() {
+            resultsContainer.innerHTML = '';
+            document.getElementById('streamCounter').textContent = 'Orders received: 0';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Allow enter key to start streaming
+            document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    startStreaming();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
