@@ -66,21 +66,13 @@ public class OrderMgtServiceImpl extends OrderManagementImplBase {
 		logger.info("searchOrders received ");
 
 		for (Map.Entry<String, OrderManagementOuterClass.Order> orderEntry : data.orderMap.entrySet()) {
-
 			OrderManagementOuterClass.Order order = orderEntry.getValue();
-
 			for (String item : order.getItemsList()) {
 				if (item.contains(request.getValue())) {
 					logger.info("searchOrders sending data ");
 					responseObserver.onNext(order);
 					break;
 				}
-			}
-			try {
-				Thread.sleep(500l);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
 		logger.info("searchOrders onCompleted ");

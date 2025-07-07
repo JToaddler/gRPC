@@ -1,0 +1,18 @@
+services:
+  madlabs-grpc-api:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    hostname: madlabs-grpc-api
+    image: madlabs-grpc:latest
+    ports:
+    - "50051:50051"
+  envoy:
+    image: envoyproxy/envoy:v1.24.0
+    volumes:
+    - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
+    ports:
+    - "8080:8080"
+    - "9901:9901"  # Envoy listens on port 8080
+    depends_on:
+    - madlabs-grpc-api

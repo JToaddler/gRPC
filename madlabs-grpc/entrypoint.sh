@@ -15,8 +15,5 @@ shutdown(){
 trap 'shutdown' SIGTERM
 
 echo "Starting gRPC App... "
-exec java -jar ./app/madlabs-grpc.jar
 
-./startProxy.sh & 
-
-wait $!
+java -jar ./app/madlabs-grpc.jar
